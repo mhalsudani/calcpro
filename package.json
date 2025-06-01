@@ -4,24 +4,20 @@
   "type": "module",
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
-    "build": "vite build",
-    "start": "NODE_ENV=production tsx server/index.ts"
+    "build": "tsc && vite build",
+    "start": "node dist/server/index.js",
+    "vercel-build": "npm run build"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.1",
-    "@tanstack/react-query": "^5.59.16",
-    "drizzle-orm": "^0.36.4",
     "express": "^4.21.1",
+    "drizzle-orm": "^0.36.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "stripe": "^17.3.1",
-    "wouter": "^3.3.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.3",
-    "drizzle-kit": "^0.29.0",
-    "tailwindcss": "^4.0.0-alpha.26",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vite": "^5.4.10"
