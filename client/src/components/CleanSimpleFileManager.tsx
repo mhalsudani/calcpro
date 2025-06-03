@@ -48,36 +48,102 @@ export function CleanSimpleFileManager({ userId, userPin, onBackToCalculator }: 
     setStorageUsed(totalSize / (1024 * 1024));
   };
 
+  const compressImage = async (file: File): Promise<{ data: string; size: number }> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Max dimensions for compressed images
+          const MAX_WIDTH = 1024;
+          const MAX_HEIGHT = 1024;
+          
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Compress with reduced quality
+          const compressedData = canvas.toDataURL('image/jpeg', 0.7);
+          
+          // Calculate compressed size (roughly)
+          const compressedSize = Math.round((compressedData.length * 3) / 4);
+          
+          resolve({
+            data: compressedData,
+            size: compressedSize
+          });
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleFileUpload = async (fileList: FileList) => {
     setUploading(true);
     
     const newFiles: FileType[] = [];
     
     for (const file of Array.from(fileList)) {
-      // Check storage limit
-      const fileSizeMB = file.size / (1024 * 1024);
-      if (storageUsed + fileSizeMB > maxStorage) {
-        alert(`Storage limit exceeded. You have ${(maxStorage - storageUsed).toFixed(1)}MB remaining.`);
-        break;
-      }
-      
-      const reader = new FileReader();
-      await new Promise((resolve) => {
-        reader.onload = () => {
-          const newFile: FileType = {
-            id: Date.now() + Math.random(),
-            name: file.name,
-            type: getFileType(file.type),
-            size: file.size,
-            mimeType: file.type,
-            data: reader.result as string,
-            userId: userId,
-          };
-          newFiles.push(newFile);
-          resolve(null);
+      try {
+        // Check file size before processing
+        const fileSizeMB = file.size / (1024 * 1024);
+        if (storageUsed + fileSizeMB > maxStorage) {
+          alert(`Storage limit exceeded. You have ${(maxStorage - storageUsed).toFixed(1)}MB remaining.`);
+          break;
+        }
+
+        let fileData: string;
+        let fileSize: number;
+
+        if (file.type.startsWith('image/')) {
+          // Compress images
+          const compressed = await compressImage(file);
+          fileData = compressed.data;
+          fileSize = compressed.size;
+        } else {
+          // For non-image files, use regular FileReader
+          fileData = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(file);
+          });
+          fileSize = file.size;
+        }
+
+        const newFile: FileType = {
+          id: Date.now() + Math.random(),
+          name: file.name,
+          type: getFileType(file.type),
+          size: fileSize,
+          mimeType: file.type,
+          data: fileData,
+          userId: userId,
         };
-        reader.readAsDataURL(file);
-      });
+        
+        newFiles.push(newFile);
+      } catch (error) {
+        console.error('Error processing file:', file.name, error);
+        alert(`Error processing file: ${file.name}`);
+      }
     }
     
     if (newFiles.length > 0) {
