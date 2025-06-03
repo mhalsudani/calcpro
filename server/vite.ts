@@ -3,6 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import type { Express } from "express";
 import type { Server } from "http";
+import express from "express";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
