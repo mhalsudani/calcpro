@@ -59,8 +59,8 @@ export function CleanSimpleFileManager({ userId, userPin, onBackToCalculator }: 
           let height = img.height;
           
           // Max dimensions for compressed images
-          const MAX_WIDTH = 1024;
-          const MAX_HEIGHT = 1024;
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
           
           if (width > height) {
             if (width > MAX_WIDTH) {
@@ -81,7 +81,7 @@ export function CleanSimpleFileManager({ userId, userPin, onBackToCalculator }: 
           ctx?.drawImage(img, 0, 0, width, height);
           
           // Compress with reduced quality
-          const compressedData = canvas.toDataURL('image/jpeg', 0.7);
+          const compressedData = canvas.toDataURL('image/jpeg', 0.6);
           
           // Calculate compressed size (roughly)
           const compressedSize = Math.round((compressedData.length * 3) / 4);
@@ -98,16 +98,24 @@ export function CleanSimpleFileManager({ userId, userPin, onBackToCalculator }: 
   };
 
   const handleFileUpload = async (fileList: FileList) => {
+    if (uploading) return;
     setUploading(true);
     
     const newFiles: FileType[] = [];
+    const maxFileSize = 10 * 1024 * 1024; // 10MB per file
     
     for (const file of Array.from(fileList)) {
       try {
-        // Check file size before processing
+        // Check individual file size
+        if (file.size > maxFileSize) {
+          alert(`File ${file.name} exceeds the 10MB limit`);
+          continue;
+        }
+
+        // Check total storage limit
         const fileSizeMB = file.size / (1024 * 1024);
         if (storageUsed + fileSizeMB > maxStorage) {
-          alert(`Storage limit exceeded. You have ${(maxStorage - storageUsed).toFixed(1)}MB remaining.`);
+          alert(`Storage limit reached. You have ${(maxStorage - storageUsed).toFixed(1)}MB remaining.`);
           break;
         }
 
@@ -151,6 +159,9 @@ export function CleanSimpleFileManager({ userId, userPin, onBackToCalculator }: 
     }
     
     setUploading(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const getFileType = (mimeType: string): "image" | "video" | "document" => {
@@ -216,11 +227,12 @@ export function CleanSimpleFileManager({ userId, userPin, onBackToCalculator }: 
               multiple
               className="hidden"
               onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+              accept="image/*,video/*,.pdf,.doc,.docx,.txt"
             />
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading || storageUsed >= maxStorage}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Upload size={20} />
               <span>{uploading ? 'Uploading...' : 'Upload Files'}</span>
@@ -240,6 +252,7 @@ export function CleanSimpleFileManager({ userId, userPin, onBackToCalculator }: 
           {files.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500">No files uploaded yet</p>
+              <p className="text-sm text-gray-400 mt-2">Maximum file size: 10MB</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
