@@ -52,18 +52,19 @@ export default function CalcPro() {
   const renderFileManager = () => {
     if (!currentUser) return null;
     
-    const isPro = currentUser?.pin === '1234' || currentUser?.subscriptionType === 'pro';
-    
-    if (isPro) {
-      return (
-        <CloudFileManager 
-          userId={currentUser.id} 
-          onBackToCalculator={handleBackToCalculator}
-          language={language}
-          onLanguageChange={handleLanguageChange}
-          onThemeChange={toggleTheme}
-        />
-      );
+    const renderFileManager = () => {
+  if (!currentUser) return null;
+  
+  return (
+    <CloudFileManager 
+      userId={currentUser.id} 
+      onBackToCalculator={handleBackToCalculator}
+      language={language}
+      onLanguageChange={handleLanguageChange}
+      onThemeChange={toggleTheme}
+    />
+  );
+};
     } else {
       return (
         <CleanSimpleFileManager 
