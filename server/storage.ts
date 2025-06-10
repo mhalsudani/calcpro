@@ -86,14 +86,15 @@ export class DatabaseStorage implements IStorage {
     const user = await this.getUser(userId);
     if (!user) return { used: 0, total: 50, isUnlimited: false };
 
-    const userFiles = await this.getFilesByUserId(userId);
-    const used = userFiles.reduce((total, file) => total + file.size, 0) / (1024 * 1024); // Convert to MB
+    async getStorageStats(userId: number): Promise<{ used: number; total: number; isUnlimited: boolean }> {
+  const user = await this.getUser(userId);
+  if (!user) return { used: 0, total: 0, isUnlimited: true };
 
-    const isUnlimited = user.subscriptionType === 'pro';
-    const total = isUnlimited ? 0 : parseFloat(user.maxStorage || "50");
+  const userFiles = await this.getFilesByUserId(userId);
+  const used = userFiles.reduce((total, file) => total + file.size, 0) / (1024 * 1024); // Convert to MB
 
-    return { used: Math.round(used * 100) / 100, total, isUnlimited };
-  }
+  return { used: Math.round(used * 100) / 100, total: 0, isUnlimited: true };
+}
 
   async createSettings(insertSettings: InsertSettings): Promise<Settings> {
     const [settings] = await db
